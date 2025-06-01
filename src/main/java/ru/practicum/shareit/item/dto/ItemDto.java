@@ -10,7 +10,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ItemDto {
     private Long id;
+
     private String name;
+
     private String description;
+
     private Boolean available;
 }

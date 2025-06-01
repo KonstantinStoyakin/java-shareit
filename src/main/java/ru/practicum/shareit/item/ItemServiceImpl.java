@@ -26,12 +26,15 @@ public class ItemServiceImpl implements ItemService {
         if (item.getOwnerId() == null || userService.getUser(item.getOwnerId()) == null) {
             throw new NotFoundException("Пользователь с ID " + item.getOwnerId() + " не найден");
         }
+
         if (item.getName() == null || item.getName().isBlank()) {
             throw new ValidationException("Название не может быть пустым");
         }
+
         if (item.getDescription() == null || item.getDescription().isBlank()) {
             throw new ValidationException("Описание не может быть пустым");
         }
+
         if (item.getAvailable() == null) {
             throw new ValidationException("Статус доступности должен быть указан");
         }
