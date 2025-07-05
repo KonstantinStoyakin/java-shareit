@@ -1,77 +1,61 @@
 package ru.practicum.shareit.user;
 
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.ConflictException;
 import ru.practicum.shareit.exception.NotFoundException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
+@Transactional
 public class UserServiceImpl implements UserService {
-    private final Map<Long, User> users = new HashMap<>();
-    private Long idCounter = 1L;
+    private final UserRepository userRepository;
 
     @Override
     public User createUser(User user) {
         validateUserEmail(user.getEmail());
-        user.setId(idCounter++);
-        users.put(user.getId(), user);
-        return user;
+        return userRepository.save(user);
     }
 
     @Override
     public User updateUser(Long userId, User user) {
-        if (!users.containsKey(userId)) {
-            throw new NotFoundException("User not found");
-        }
-
-        User existingUser = users.get(userId);
+        User existingUser = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         if (user.getName() != null) {
             existingUser.setName(user.getName());
         }
 
-        if (user.getEmail() != null) {
-            if (!user.getEmail().equals(existingUser.getEmail())) {
-                validateUserEmail(user.getEmail());
-            }
+        if (user.getEmail() != null && !user.getEmail().equals(existingUser.getEmail())) {
+            validateUserEmail(user.getEmail());
             existingUser.setEmail(user.getEmail());
         }
 
-        return existingUser;
+        return userRepository.save(existingUser);
     }
 
     @Override
     public User getUser(Long userId) {
-        if (!users.containsKey(userId)) {
-            throw new NotFoundException("User not found");
-        }
-        return users.get(userId);
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
     }
 
     @Override
     public void deleteUser(Long userId) {
-        users.remove(userId);
+        userRepository.deleteById(userId);
     }
 
     @Override
     public List<User> getAllUsers() {
-        return new ArrayList<>(users.values());
+        return userRepository.findAll();
     }
 
     private void validateUserEmail(String email) {
-        if (email == null) {
-            throw new IllegalArgumentException("Email must not be null");
+        if (userRepository.existsByEmail(email)) {
+            throw new ConflictException("Email already exists");
         }
-
-        users.values().stream()
-                .filter(u -> email.equals(u.getEmail())) // безопасно: email точно не null
-                .findFirst()
-                .ifPresent(u -> {
-                    throw new ConflictException("Email already exists");
-                });
     }
 }
