@@ -35,18 +35,24 @@ public class ErrorHandler {
         String errors = e.getBindingResult().getFieldErrors().stream()
                 .map(err -> err.getField() + ": " + err.getDefaultMessage())
                 .collect(Collectors.joining("; "));
-        return new ErrorResponse("Ошибка валидации: " + errors);
+        return new ErrorResponse("Validation error: " + errors);
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleMissingRequestHeaderException(final MissingRequestHeaderException e) {
-        return new ErrorResponse("Отсутствует обязательный заголовок: " + e.getHeaderName());
+        return new ErrorResponse("Required header is missing: " + e.getHeaderName());
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleNullPointerException(final NullPointerException e) {
-        return new ErrorResponse("Обнаружена нулевая ссылка: " + e.getMessage());
+        return new ErrorResponse("Null reference detected: " + e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErrorResponse handleForbiddenException(final ForbiddenException e) {
+        return new ErrorResponse(e.getMessage());
     }
 }

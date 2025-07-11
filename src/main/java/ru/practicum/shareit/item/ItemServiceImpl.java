@@ -2,71 +2,51 @@ package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
+import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserService;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
-    private final Map<Long, Item> items = new HashMap<>();
-    private Long idCounter = 1L;
+    private final ItemRepository itemRepository;
 
     private final UserService userService;
 
+    private final BookingRepository bookingRepository;
+
+    private final CommentRepository commentRepository;
+
     @Override
-    public Item addItem(Item item) {
-        if (item.getOwnerId() == null || userService.getUser(item.getOwnerId()) == null) {
-            throw new NotFoundException("Пользователь с ID " + item.getOwnerId() + " не найден");
-        }
-
-        if (item.getName() == null || item.getName().isBlank()) {
-            throw new ValidationException("Название не может быть пустым");
-        }
-
-        if (item.getDescription() == null || item.getDescription().isBlank()) {
-            throw new ValidationException("Описание не может быть пустым");
-        }
-
-        if (item.getAvailable() == null) {
-            throw new ValidationException("Статус доступности должен быть указан");
-        }
-
-        item.setId(idCounter++);
-        items.put(item.getId(), item);
-        return item;
+    public Item addItem(Item item, Long ownerId) {
+        User owner = userService.getUser(ownerId);
+        item.setOwner(owner);
+        validateItem(item);
+        return itemRepository.save(item);
     }
 
     @Override
-    public Item updateItem(Item item) {
-        if (!items.containsKey(item.getId())) {
-            throw new NotFoundException("Вещь не найдена");
-        }
+    public Item updateItem(Item item, Long ownerId) {
+        Item existingItem = itemRepository.findById(item.getId())
+                .orElseThrow(() -> new NotFoundException("Item not found"));
 
-        Item existingItem = items.get(item.getId());
-
-        if (!existingItem.getOwnerId().equals(item.getOwnerId())) {
-            throw new NotFoundException("Обновлять вещь может только владелец");
+        if (!existingItem.getOwner().getId().equals(ownerId)) {
+            throw new NotFoundException("Only owner can update item");
         }
 
         if (item.getName() != null) {
-            if (item.getName().isBlank()) {
-                throw new ValidationException("Название не может быть пустым");
-            }
             existingItem.setName(item.getName());
         }
 
         if (item.getDescription() != null) {
-            if (item.getDescription().isBlank()) {
-                throw new ValidationException("Описание не может быть пустым");
-            }
             existingItem.setDescription(item.getDescription());
         }
 
@@ -74,37 +54,73 @@ public class ItemServiceImpl implements ItemService {
             existingItem.setAvailable(item.getAvailable());
         }
 
-        return existingItem;
+        return itemRepository.save(existingItem);
     }
 
     @Override
-    public Item getItem(Long itemId) {
-        if (!items.containsKey(itemId)) {
-            throw new NotFoundException("Вещь не найдена");
+    public Item getItem(Long itemId, Long userId) {
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Item not found"));
+
+        if (item.getOwner().getId().equals(userId)) {
+            LocalDateTime now = LocalDateTime.now();
+            item.setLastBooking(bookingRepository.findLastBooking(itemId, now).stream().findFirst().orElse(null));
+            item.setNextBooking(bookingRepository.findNextBooking(itemId, now).stream().findFirst().orElse(null));
         }
-        return items.get(itemId);
+
+        item.setComments(commentRepository.findByItemId(itemId));
+        return item;
     }
 
     @Override
     public List<Item> getUserItems(Long userId) {
-        return items.values().stream()
-                .filter(item -> item.getOwnerId().equals(userId))
-                .collect(Collectors.toList());
+        List<Item> items = itemRepository.findByOwnerId(userId);
+        LocalDateTime now = LocalDateTime.now();
+
+        return items.stream().peek(item -> {
+            item.setLastBooking(bookingRepository.findLastBooking(item.getId(), now)
+                    .stream().findFirst().orElse(null));
+            item.setNextBooking(bookingRepository.findNextBooking(item.getId(), now)
+                    .stream().findFirst().orElse(null));
+            item.setComments(commentRepository.findByItemId(item.getId()));
+        }).collect(Collectors.toList());
     }
 
     @Override
     public List<Item> searchItems(String text) {
         if (text == null || text.isBlank()) {
-            return new ArrayList<>();
+            return Collections.emptyList();
+        }
+        return itemRepository.searchAvailableItems(text);
+    }
+
+    @Override
+    public Comment addComment(Comment comment, Long itemId, Long userId) {
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Item not found"));
+
+        User author = userService.getUser(userId);
+
+        if (!bookingRepository.existsByItemIdAndBookerIdAndEndBefore(itemId, userId, LocalDateTime.now())) {
+            throw new ValidationException("User didn't book this item");
         }
 
-        String searchText = text.toLowerCase();
-        return items.values().stream()
-                .filter(item -> Boolean.TRUE.equals(item.getAvailable()))
-                .filter(item -> item.getName() != null &&
-                        item.getName().toLowerCase().contains(searchText) ||
-                        (item.getDescription() != null &&
-                                item.getDescription().toLowerCase().contains(searchText)))
-                .collect(Collectors.toList());
+        comment.setItem(item);
+        comment.setAuthor(author);
+        comment.setCreated(LocalDateTime.now());
+
+        return commentRepository.save(comment);
+    }
+
+    private void validateItem(Item item) {
+        if (item.getName() == null || item.getName().isBlank()) {
+            throw new ValidationException("Name cannot be blank");
+        }
+        if (item.getDescription() == null || item.getDescription().isBlank()) {
+            throw new ValidationException("Description cannot be blank");
+        }
+        if (item.getAvailable() == null) {
+            throw new ValidationException("Available status cannot be null");
+        }
     }
 }
