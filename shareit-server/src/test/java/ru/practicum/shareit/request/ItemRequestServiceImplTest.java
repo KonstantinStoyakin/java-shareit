@@ -10,9 +10,11 @@ import ru.practicum.shareit.item.ItemMapper;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.user.UserRepository;
 
+import java.util.Collections;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
@@ -52,5 +54,23 @@ class ItemRequestServiceImplTest {
 
         assertThrows(NotFoundException.class,
                 () -> itemRequestService.getRequestById(1L, 1L));
+    }
+
+    @Test
+    void getUserRequests_shouldReturnEmptyList() {
+        when(userRepository.existsById(1L)).thenReturn(true);
+        when(itemRequestRepository.findAllByRequesterIdOrderByCreatedDesc(1L))
+                .thenReturn(Collections.emptyList());
+
+        assertTrue(itemRequestService.getUserRequests(1L).isEmpty());
+    }
+
+    @Test
+    void getRequestById_shouldThrowWhenNotFound() {
+        when(userRepository.existsById(1L)).thenReturn(true);
+        when(itemRequestRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () ->
+                itemRequestService.getRequestById(1L, 999L));
     }
 }

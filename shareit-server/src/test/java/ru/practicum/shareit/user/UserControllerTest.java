@@ -118,4 +118,12 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(user)))
                 .andExpect(status().isConflict());
     }
+
+    @Test
+    void createUser_shouldValidateInput() throws Exception {
+        mockMvc.perform(post("/users")
+                        .content("{\"name\":\"\", \"email\":\"invalid\"}")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
 }

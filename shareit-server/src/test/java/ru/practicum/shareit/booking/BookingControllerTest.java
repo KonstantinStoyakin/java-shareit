@@ -160,4 +160,13 @@ class BookingControllerTest {
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].id").value(1L));
     }
+
+    @Test
+    void createBooking_shouldValidateDates() throws Exception {
+        mockMvc.perform(post("/bookings")
+                        .header("X-Sharer-User-Id", 1)
+                        .content("{\"start\":\"2023-01-01T00:00:00\", \"end\":\"2022-01-01T00:00:00\"}")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
 }
