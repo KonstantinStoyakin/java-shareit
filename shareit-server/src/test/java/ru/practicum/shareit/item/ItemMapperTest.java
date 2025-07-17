@@ -1,24 +1,38 @@
 package ru.practicum.shareit.item;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import ru.practicum.shareit.ShareItServer;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.ItemRequest;
 
+import java.util.Collections;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-@SpringBootTest(classes = ShareItServer.class)
+@ExtendWith(MockitoExtension.class)
 class ItemMapperTest {
 
-    @Autowired
+    @Mock
+    private CommentMapper commentMapper;
+
+    @InjectMocks
     private ItemMapper itemMapper;
 
     @Test
-    void toDto_shouldMapEntityToDto() {
+    void toDto_shouldMapAllFields() {
         Item item = new Item();
         item.setId(1L);
         item.setName("Test Item");
@@ -29,28 +43,90 @@ class ItemMapperTest {
         request.setId(10L);
         item.setRequest(request);
 
-        ItemDto dto = itemMapper.toDto(item);
+        Comment comment = new Comment();
+        item.setComments(List.of(comment));
 
-        assertNotNull(dto);
-        assertEquals(item.getId(), dto.getId());
-        assertEquals(item.getName(), dto.getName());
-        assertEquals(request.getId(), dto.getRequestId());
+        CommentDto commentDto = new CommentDto();
+        when(commentMapper.toDto(comment)).thenReturn(commentDto);
+
+        ItemDto result = itemMapper.toDto(item);
+
+        assertNotNull(result);
+        assertEquals(item.getId(), result.getId());
+        assertEquals(item.getName(), result.getName());
+        assertEquals(item.getDescription(), result.getDescription());
+        assertEquals(item.getAvailable(), result.getAvailable());
+        assertEquals(request.getId(), result.getRequestId());
+        assertEquals(1, result.getComments().size());
+        assertEquals(commentDto, result.getComments().get(0));
     }
 
     @Test
-    void toItem_shouldMapDtoToEntity() {
-        ItemDto dto = new ItemDto();
-        dto.setId(1L);
-        dto.setName("Test Item");
-        dto.setDescription("Test Description");
-        dto.setAvailable(true);
-        dto.setRequestId(10L);
+    void toDto_shouldHandleNullRequest() {
+        Item item = new Item();
+        item.setId(1L);
+        item.setComments(null);
 
-        Item item = itemMapper.toItem(dto);
+        ItemDto result = itemMapper.toDto(item);
 
-        assertNotNull(item);
-        assertEquals(dto.getId(), item.getId());
-        assertEquals(dto.getName(), item.getName());
-        assertEquals(dto.getRequestId(), item.getRequest().getId());
+        assertNotNull(result);
+        assertNull(result.getRequestId());
+        assertNull(result.getComments());
+    }
+
+    @Test
+    void toDto_shouldHandleEmptyComments() {
+        Item item = new Item();
+        item.setId(1L);
+        item.setComments(Collections.emptyList());
+
+        ItemDto result = itemMapper.toDto(item);
+
+        assertNotNull(result);
+        assertTrue(result.getComments().isEmpty());
+    }
+
+    @Test
+    void toItem_shouldMapAllFields() {
+        ItemDto itemDto = new ItemDto();
+        itemDto.setId(1L);
+        itemDto.setName("Test Item");
+        itemDto.setDescription("Test Description");
+        itemDto.setAvailable(true);
+        itemDto.setRequestId(10L);
+
+        Item result = itemMapper.toItem(itemDto);
+
+        assertNotNull(result);
+        assertEquals(itemDto.getId(), result.getId());
+        assertEquals(itemDto.getName(), result.getName());
+        assertEquals(itemDto.getDescription(), result.getDescription());
+        assertEquals(itemDto.getAvailable(), result.getAvailable());
+        assertNotNull(result.getRequest());
+        assertEquals(itemDto.getRequestId(), result.getRequest().getId());
+    }
+
+    @Test
+    void toItem_shouldHandleNullRequestId() {
+        ItemDto itemDto = new ItemDto();
+        itemDto.setId(1L);
+        itemDto.setRequestId(null);
+
+        Item result = itemMapper.toItem(itemDto);
+
+        assertNotNull(result);
+        assertNull(result.getRequest());
+    }
+
+    @Test
+    void toCommentDto_shouldDelegateToCommentMapper() {
+        Comment comment = new Comment();
+        CommentDto expected = new CommentDto();
+        when(commentMapper.toDto(comment)).thenReturn(expected);
+
+        CommentDto result = itemMapper.toCommentDto(comment);
+
+        assertSame(expected, result);
+        verify(commentMapper).toDto(comment);
     }
 }

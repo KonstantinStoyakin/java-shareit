@@ -17,9 +17,11 @@ import ru.practicum.shareit.user.User;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
 @Import({TestConfig.class, BookingServiceImpl.class})
@@ -165,5 +167,29 @@ class BookingServiceImplIntegrationTest {
 
         assertThrows(ValidationException.class,
                 () -> bookingService.validateBookingDates(booking));
+    }
+
+    @Test
+    void getUserBookings_shouldReturnOnlyUserBookings() {
+        User anotherUser = new User();
+        anotherUser.setName("Another");
+        anotherUser.setEmail("another@example.com");
+        em.persist(anotherUser);
+
+        bookingRepository.save(booking);
+
+        List<Booking> bookings = bookingService.getUserBookings(
+                anotherUser.getId(), "ALL", 0, 10);
+
+        assertTrue(bookings.isEmpty());
+    }
+
+    @Test
+    void validateBookingDates_shouldNotThrowForValidDates() {
+        Booking validBooking = new Booking();
+        validBooking.setStart(LocalDateTime.now().plusDays(1));
+        validBooking.setEnd(LocalDateTime.now().plusDays(2));
+
+        assertDoesNotThrow(() -> bookingService.validateBookingDates(validBooking));
     }
 }

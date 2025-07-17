@@ -85,7 +85,8 @@ public class BookingServiceImpl implements BookingService {
     public List<Booking> getUserBookings(Long userId, String state, Integer from, Integer size) {
         userService.getUser(userId);
         LocalDateTime now = LocalDateTime.now();
-        PageRequest page = PageRequest.of(from / size, size, Sort.by(Sort.Direction.DESC, "start"));
+        PageRequest page = PageRequest.of(from / size, size, Sort.by(Sort.Direction.DESC,
+                "start"));
 
         switch (state) {
             case "ALL":
@@ -114,7 +115,8 @@ public class BookingServiceImpl implements BookingService {
     public List<Booking> getOwnerBookings(Long userId, String state, Integer from, Integer size) {
         userService.getUser(userId);
         LocalDateTime now = LocalDateTime.now();
-        PageRequest page = PageRequest.of(from / size, size, Sort.by(Sort.Direction.DESC, "start"));
+        PageRequest page = PageRequest.of(from / size, size, Sort.by(Sort.Direction.DESC,
+                "start"));
 
         switch (state) {
             case "ALL":

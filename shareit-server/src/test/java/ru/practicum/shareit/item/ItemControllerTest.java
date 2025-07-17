@@ -167,4 +167,12 @@ class ItemControllerTest {
                 .andExpect(jsonPath("$.error")
                         .value(containsString("Comment text cannot be empty")));
     }
+
+    @Test
+    void searchItems_shouldReturnEmptyOnEmptyText() throws Exception {
+        mockMvc.perform(get("/items/search")
+                        .param("text", ""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
 }

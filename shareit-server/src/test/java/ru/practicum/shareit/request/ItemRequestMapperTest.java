@@ -9,10 +9,12 @@ import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.user.User;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(classes = ShareItServer.class)
 class ItemRequestMapperTest {
@@ -54,5 +56,16 @@ class ItemRequestMapperTest {
         assertNotNull(dto.getItems());
         assertEquals(1, dto.getItems().size());
         assertEquals(item.getId(), dto.getItems().get(0).getId());
+    }
+
+    @Test
+    void toDto_shouldMapEmptyItemsToEmptyList() {
+        ItemRequest request = new ItemRequest();
+        request.setItems(Collections.emptyList());
+
+        ItemRequestDto dto = itemRequestMapper.toDto(request);
+
+        assertNotNull(dto.getItems());
+        assertTrue(dto.getItems().isEmpty());
     }
 }

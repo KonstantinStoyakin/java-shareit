@@ -83,4 +83,14 @@ class BookingRepositoryTest {
         assertFalse(result.isEmpty());
         assertEquals(booking.getId(), result.get(0).getId());
     }
+
+    @Test
+    void existsByItemIdAndTimeRange_shouldReturnFalseWhenNoOverlap() {
+        boolean exists = bookingRepository.existsByItemIdAndTimeRange(
+                item.getId(),
+                LocalDateTime.now().plusDays(3),
+                LocalDateTime.now().plusDays(4));
+
+        assertFalse(exists);
+    }
 }

@@ -68,7 +68,8 @@ public class ItemRequestServiceImpl implements ItemRequestService {
             throw new NotFoundException("User not found");
         }
 
-        PageRequest page = PageRequest.of(from / size, size, Sort.by(Sort.Direction.DESC, "created"));
+        PageRequest page = PageRequest.of(from / size, size, Sort.by(Sort.Direction.DESC,
+                "created"));
         return itemRequestRepository.findAllByRequesterIdNotOrderByCreatedDesc(userId, page).stream()
                 .map(request -> {
                     List<ItemDto> items = itemRepository.findAllByRequestId(request.getId()).stream()

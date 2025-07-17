@@ -32,7 +32,8 @@ class ItemDtoJsonTest {
     void shouldSerialize() {
         ItemDto.BookingShort lastBooking = new ItemDto.BookingShort(1L, 2L);
         ItemDto.BookingShort nextBooking = new ItemDto.BookingShort(3L, 4L);
-        CommentDto comment = new CommentDto(5L, "Comment", "Author", LocalDateTime.of(2023, 1, 1, 12, 0));
+        CommentDto comment = new CommentDto(5L, "Comment", "Author", LocalDateTime.of(2023, 1,
+                1, 12, 0));
         ItemDto itemDto = new ItemDto(1L, "Test Item", "Test Description", true,
                 lastBooking, nextBooking, List.of(comment), 10L);
 

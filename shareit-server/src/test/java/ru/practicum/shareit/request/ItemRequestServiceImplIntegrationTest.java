@@ -20,6 +20,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
 @Import({TestConfig.class, ItemRequestServiceImpl.class, ItemRequestMapper.class, ItemMapper.class})
@@ -133,5 +134,23 @@ class ItemRequestServiceImplIntegrationTest {
     void getRequestById_shouldThrowWhenRequestNotFound() {
         assertThrows(NotFoundException.class,
                 () -> itemRequestService.getRequestById(requester.getId(), 999L));
+    }
+
+    @Test
+    void getOtherUsersRequests_shouldReturnEmptyWhenNoOtherRequests() {
+        List<ItemRequestDto> requests = itemRequestService.getOtherUsersRequests(
+                requester.getId(), 0, 10);
+
+        assertTrue(requests.isEmpty());
+    }
+
+    @Test
+    void getRequestById_shouldReturnEmptyItemsWhenNoItems() {
+        ItemRequest savedRequest = itemRequestRepository.save(request);
+
+        ItemRequestDto foundRequest = itemRequestService.getRequestById(
+                owner.getId(), savedRequest.getId());
+
+        assertTrue(foundRequest.getItems().isEmpty());
     }
 }
