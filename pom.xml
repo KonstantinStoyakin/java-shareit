@@ -21,8 +21,8 @@
 	</properties>
 
 	<modules>
-		<module>shareit-server</module>
-		<module>shareit-gateway</module>
+		<module>server</module>
+		<module>gateway</module>
 	</modules>
 
 
